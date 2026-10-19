@@ -2,7 +2,7 @@
 export let dailyDetails
 export let employeeId
 export let csrfToken
-export let todayDayNum
+export let todayDate
 export let isEditable
 let pageTimesheet
 let timesheetStatus
@@ -14,7 +14,7 @@ let timesheetStatus
 
 export const isTimesheetParsed = () => dailyDetails && employeeId && csrfToken
 export const isDateContainsTimeEntries = (dateData) => !!dailyDetails[dateData]?.clockEntries?.length
-export const isDateTodayOrPast = (dateData) => new Date(dateData).getDate() <= todayDayNum
+export const isDateTodayOrPast = (dateData) => new Date(dateData) <= todayDate
 export const isCurrentEditable = () => timesheetStatus === "future" && isEditable
 export const isPreviousEditable = () => timesheetStatus === "pending" && isEditable
 
@@ -34,7 +34,6 @@ export const parseTimeSheetAndPopulateData = () => {
     if (!timesheetJsonEl) return;
 
     const timesheetJson = JSON.parse(timesheetJsonEl.textContent)
-    console.log(timesheetJson)
 
     pageTimesheet = timesheetJson?.timesheet
     timesheetStatus = pageTimesheet?.status
@@ -42,8 +41,8 @@ export const parseTimeSheetAndPopulateData = () => {
     dailyDetails = pageTimesheet?.dailyDetails
     employeeId = timesheetJson?.employeeId
     csrfToken = extractCsrfToken() //window.CSRF_TOKEN
-    console.log("CSRF_TOKEN: ", csrfToken)
 
-    todayDayNum = new Date(timesheetJson?.today?.date ?? Date.now()).getDate()
-    console.log(todayDayNum)
+    todayDate = new Date(timesheetJson?.today?.date ?? Date.now())
+    // Set to end of today so today's date is included as "today or past"
+    todayDate.setHours(23, 59, 59, 999)
 }
