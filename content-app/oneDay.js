@@ -60,37 +60,59 @@ const addBtn = (dateData) => {
 }
 
 export const populateEachDay = async () => {
-    if (!isCurrentEditable() && !isPreviousEditable()) return;
+    if (!isCurrentEditable() && !isPreviousEditable()) {
+        return;
+    }
 
     let configs = await getConfigsFromStorage()
     if (!configs) {
         configs = defaultConfigs
     }
 
-    document.querySelectorAll(".TimesheetSlat:not([data-bamboobulk])").forEach(el => {
+    const timesheetSlats = document.querySelectorAll(".TimesheetSlat:not([data-bamboobulk])");
+
+    timesheetSlats.forEach((el, index) => {
         el.dataset.bamboobulk = "1"
-        const dayDate = el.querySelector(".TimesheetSlat__dayDate")
-        if(!dayDate) return;
+        const dayDate = el.querySelector(".TimesheetSlat__dayDate");
+        if(!dayDate) {
+            return;
+        }
+
+        const dayDateText = dayDate.textContent;
 
         //generate date string in format '2023-10-31', equal to the key format in bamboo timesheet
         try {
-            /*
-            * toISOString() produces not local result, so while testing in CET timezone always get one day lower result
-            * const dateData = new Date(dayDate.textContent + " " + new Date().getFullYear()).toISOString().substring(0, 10)
-            * */
-            const year = new Date().getFullYear()
-            const dateTimeData = new Date(dayDate.textContent + " " + year)
-            const dateData = `${year}-${addZero(dateTimeData.getMonth()+1)}-${addZero(dateTimeData.getDate())}`
+            const year = new Date().getFullYear();
+            const dateTimeData = new Date(dayDateText + " " + year);
+            const dateData = `${year}-${addZero(dateTimeData.getMonth()+1)}-${addZero(dateTimeData.getDate())}`;
 
-            const isEditable = isPreviousEditable() || isDateTodayOrPast(dateData)
-            if (!isEditable) return;
+            const isEditableForDate = isPreviousEditable() || isCurrentEditable();
+            
+            if (!isEditableForDate) {
+                return;
+            }
 
-            const oneDay = dailyDetails[dateData]
-            if(!oneDay || skippingDay(configs, oneDay)) return;
+            const oneDay = dailyDetails[dateData];
+            
+            if(!oneDay) {
+                return;
+            }
 
-            el.appendChild(isDateContainsTimeEntries(dateData) ? delBtn(dateData) : addBtn(dateData))
-        }catch (e) {
-            console.log(e)
+            const shouldSkip = skippingDay(configs, oneDay);
+            
+            if(shouldSkip) {
+                return;
+            }
+
+            const hasTimeEntries = isDateContainsTimeEntries(dateData);
+
+            const buttonToAdd = hasTimeEntries ? delBtn(dateData) : addBtn(dateData);
+            
+            el.appendChild(buttonToAdd);
+            
+        } catch (e) {
+            console.error(`BambooBulk: Error processing day element ${index + 1}:`, e);
+            console.error(`BambooBulk: Day date text was: "${dayDateText}"`);
         }
-    })
+    });
 }
