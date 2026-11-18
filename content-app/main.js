@@ -8,17 +8,11 @@ import {populateEachDay} from "./oneDay.js";
 import {bulkContainer} from "./bulk.js";
 
 //TODO: refactor the logic not to be dependent on site design changes, but only on actual raw data
-let timesheetParseAttempted = false
 
 // Bamboo renders the timesheet client-side after document_idle and may re-render it, so setup must be retryable and idempotent
 const setup = () => {
     const timeSheetEntriesContainer = document.querySelector(".TimesheetEntries")
     if (!timeSheetEntriesContainer || !document.querySelector(".TimesheetSlat")) return;
-
-    if (!timesheetParseAttempted) {
-        timesheetParseAttempted = true
-        parseTimeSheetAndPopulateData()
-    }
     if (!isTimesheetParsed() || !isEditable) return;
 
     if (!document.getElementById("bamboo-bulk-btn-container")) {
@@ -40,4 +34,6 @@ new MutationObserver(() => {
     })
 }).observe(document.body, {childList: true, subtree: true})
 
-setup()
+parseTimeSheetAndPopulateData()
+    .then(setup)
+    .catch((e) => console.error("BambooBulk: could not load timesheet data", e))

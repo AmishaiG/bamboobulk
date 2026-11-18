@@ -1,4 +1,6 @@
 /*Timesheet data and parse*/
+import {getTimesheetTabData} from "./api.js";
+
 export let dailyDetails
 export let employeeId
 export let csrfToken
@@ -29,11 +31,28 @@ const extractCsrfToken = () => {
     }
 }
 
-export const parseTimeSheetAndPopulateData = () => {
-    const timesheetJsonEl = document.getElementById("js-timesheet-data")
-    if (!timesheetJsonEl) return;
+// same params Bamboo's own timesheet tab sends
+const timesheetTabQuery = () => {
+    const params = new URLSearchParams(location.search)
+    const employeeTimesheetId = params.get("et_id")
+    if (employeeTimesheetId) return new URLSearchParams({employeeTimesheetId})
 
-    const timesheetJson = JSON.parse(timesheetJsonEl.textContent)
+    const query = new URLSearchParams({employeeId: params.get("id") ?? ""})
+    const payCycleId = params.get("pay_cycle_id")
+    if (payCycleId) query.set("payCycleId", payCycleId)
+    return query
+}
+
+const loadTimesheetJson = async () => {
+    const timesheetJsonEl = document.getElementById("js-timesheet-data")
+    if (timesheetJsonEl) return JSON.parse(timesheetJsonEl.textContent)
+
+    // Bamboo no longer embeds the data in the page (TIME_TWIG_MIGRATE_TIMESHEET) and fetches it from this API instead
+    return getTimesheetTabData(timesheetTabQuery())
+}
+
+export const parseTimeSheetAndPopulateData = async () => {
+    const timesheetJson = await loadTimesheetJson()
 
     pageTimesheet = timesheetJson?.timesheet
     timesheetStatus = pageTimesheet?.status
